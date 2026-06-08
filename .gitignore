@@ -1,0 +1,13 @@
+.DS_Store
+*.pyc
+*.egg-info
+*.swp
+tags
+datev_datev/docs/current
+build/
+
+.paperclip-runtime/
+
+.paperclip/
+
+datev/datev/dummy_data.py
