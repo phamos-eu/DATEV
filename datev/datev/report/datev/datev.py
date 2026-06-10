@@ -160,12 +160,14 @@ def execute(filters=None):
 	"""Entry point for frappe."""
 	data = []
 	if filters and validate(filters):
-		temp, opening = frappe.get_value(
-			DATEV_CONFIGURATION_DOCTYPE,
-			filters.get("company"),
-			["temporary_against_account_number", "opening_against_account_number"],
+		datev_configuration = get_datev_configuration(filters.get("company"))
+		filters.update(
+			{
+				"against_account": datev_configuration.temporary_against_account_number,
+				"opening_account": datev_configuration.opening_against_account_number
+				or datev_configuration.temporary_against_account_number,
+			}
 		)
-		filters.update({"against_account": temp, "opening_account": opening or temp})
 		data = get_transactions(filters)
 		data = group_sales_invoice_buchungsstapel(data, filters)
 		data = group_payment_entry_buchungsstapel(data, filters)
@@ -204,6 +206,19 @@ def validate_fiscal_year(from_date, to_date, company):
 	to_fiscal_year = get_fiscal_year(date=to_date, company=company)
 	if from_fiscal_year != to_fiscal_year:
 		frappe.throw(_("Dates {} and {} are not in the same fiscal year.").format(from_date, to_date))
+
+
+def get_datev_configuration(company):
+	return frappe.get_value(
+		DATEV_CONFIGURATION_DOCTYPE,
+		company,
+		[
+			"account_number_length",
+			"temporary_against_account_number",
+			"opening_against_account_number",
+		],
+		as_dict=1,
+	)
 
 
 def get_transactions(filters, as_dict=1):
@@ -1155,16 +1170,16 @@ def download_datev_csv(filters):
 	company = filters.get("company")
 	fiscal_year = get_fiscal_year(date=filters.get("from_date"), company=company)
 	coa = frappe.get_value("Company", company, "chart_of_accounts")
-	datev_settings = frappe.get_doc("DATEV Settings", company)
+	datev_configuration = get_datev_configuration(company)
 
 	filters.update(
 		{
 			"fiscal_year_start": fiscal_year[1],
 			"skr": "04" if "SKR04" in coa else ("03" if "SKR03" in coa else ""),
-			"account_number_length": datev_settings.account_number_length,
-			"against_account": datev_settings.temporary_against_account_number,
-			"opening_account": datev_settings.opening_against_account_number
-			or datev_settings.temporary_against_account_number,
+			"account_number_length": datev_configuration.account_number_length,
+			"against_account": datev_configuration.temporary_against_account_number,
+			"opening_account": datev_configuration.opening_against_account_number
+			or datev_configuration.temporary_against_account_number,
 		}
 	)
 
