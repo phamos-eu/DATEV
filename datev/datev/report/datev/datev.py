@@ -23,6 +23,7 @@ from datev.utils.datev_constants import (
 from datev.utils.datev_csv import get_datev_csv, zip_and_download
 
 BUCHUNGSSTAPEL_REPORT = "EXTF_Buchungsstapel.csv"
+DATEV_CONFIGURATION_DOCTYPE = "DATEV Configuration"
 
 COLUMNS = [
 	{
@@ -160,7 +161,7 @@ def execute(filters=None):
 	data = []
 	if filters and validate(filters):
 		temp, opening = frappe.get_value(
-			"DATEV Settings",
+			DATEV_CONFIGURATION_DOCTYPE,
 			filters.get("company"),
 			["temporary_against_account_number", "opening_against_account_number"],
 		)
@@ -190,9 +191,9 @@ def validate(filters):
 
 	validate_fiscal_year(from_date, to_date, company)
 
-	if not frappe.db.exists("DATEV Settings", filters.get("company")):
-		msg = _("Please create DATEV Settings for Company {}").format(filters.get("company"))
-		frappe.log_error(message=msg, title=_("DATEV Settings missing"))
+	if not frappe.db.exists(DATEV_CONFIGURATION_DOCTYPE, filters.get("company")):
+		msg = _("Please create DATEV Configuration for Company {}").format(filters.get("company"))
+		frappe.log_error(message=msg, title=_("DATEV Configuration missing"))
 		return False
 
 	return True

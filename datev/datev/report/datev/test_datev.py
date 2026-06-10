@@ -137,11 +137,11 @@ def make_item(item_code, company):
 
 
 def make_datev_settings(company):
-	if not frappe.db.exists("DATEV Settings", company.name):
+	if not frappe.db.exists("DATEV Configuration", company.name):
 		frappe.get_doc(
 			{
-				"doctype": "DATEV Settings",
-				"client": company.name,
+				"doctype": "DATEV Configuration",
+				"company": company.name,
 				"client_number": "12345",
 				"consultant_number": "67890",
 				"temporary_against_account_number": "9999",
