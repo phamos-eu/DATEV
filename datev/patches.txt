@@ -3,4 +3,5 @@
 [post_model_sync]
 datev.patches.post_model_sync.seed_datev_mapping_records
 datev.patches.post_model_sync.migrate_datev_settings_to_configuration
+datev.patches.post_model_sync.fix_legacy_datev_report_module
 execute:frappe.db.delete("Custom Role", {"report": "DATEV"})
