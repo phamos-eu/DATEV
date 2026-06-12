@@ -13,7 +13,7 @@ frappe.ui.form.on("DATEV Mapping", {
 		}
 
 		frappe.call({
-			method: "datev.datev.doctype.datev_mapping.datev_mapping.get_map_to_field_options",
+			method: "datev.gb_datev.doctype.datev_mapping.datev_mapping.get_map_to_field_options",
 			args: { voucher_type: frm.doc.voucher_type },
 		}).then((r) => {
 			const options = ["", ...(r.message || [])].join("\n");
