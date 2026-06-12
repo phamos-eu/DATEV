@@ -137,11 +137,11 @@ def make_item(item_code, company):
 
 
 def make_datev_settings(company):
-	if not frappe.db.exists("DATEV Settings", company.name):
+	if not frappe.db.exists("DATEV Configuration", company.name):
 		frappe.get_doc(
 			{
-				"doctype": "DATEV Settings",
-				"client": company.name,
+				"doctype": "DATEV Configuration",
+				"company": company.name,
 				"client_number": "12345",
 				"consultant_number": "67890",
 				"temporary_against_account_number": "9999",
@@ -259,6 +259,67 @@ class TestDatev(TestCase):
 		zip_buffer.write(frappe.response["filecontent"])
 
 		self.assertTrue(zipfile.is_zipfile(zip_buffer))
+
+
+class TestDatevDownloadConfiguration(TestCase):
+	def test_download_uses_datev_configuration(self):
+		filters = {
+			"company": "_Test GmbH",
+			"from_date": "2026-06-10",
+			"to_date": "2026-06-10",
+		}
+		datev_configuration = frappe._dict(
+			{
+				"account_number_length": 6,
+				"temporary_against_account_number": "123456",
+				"opening_against_account_number": "654321",
+			}
+		)
+
+		with (
+			patch("datev.datev.report.datev.datev.frappe.only_for"),
+			patch("datev.datev.report.datev.datev.validate", return_value=True),
+			patch(
+				"datev.datev.report.datev.datev.get_fiscal_year",
+				return_value=("FY-2026", "2026-01-01", "2026-12-31"),
+			),
+			patch(
+				"datev.datev.report.datev.datev.frappe.get_value",
+				return_value="SKR04 mit Kontonummern",
+			),
+			patch(
+				"datev.datev.report.datev.datev.get_datev_configuration",
+				return_value=datev_configuration,
+			) as get_datev_configuration_mock,
+			patch(
+				"datev.datev.report.datev.datev.get_transactions",
+				return_value=[],
+			) as get_transactions_mock,
+			patch(
+				"datev.datev.report.datev.datev.group_sales_invoice_buchungsstapel",
+				side_effect=lambda transactions, _: transactions,
+			),
+			patch(
+				"datev.datev.report.datev.datev.group_payment_entry_buchungsstapel",
+				side_effect=lambda transactions, _: transactions,
+			),
+			patch(
+				"datev.datev.report.datev.datev.apply_buchungsstapel_mapping",
+				side_effect=lambda transactions, _: transactions,
+			),
+			patch("datev.datev.report.datev.datev.get_account_names", return_value=[]),
+			patch("datev.datev.report.datev.datev.get_customers", return_value=[]),
+			patch("datev.datev.report.datev.datev.get_suppliers", return_value=[]),
+			patch("datev.datev.report.datev.datev.get_datev_csv", return_value="csv"),
+			patch("datev.datev.report.datev.datev.zip_and_download"),
+		):
+			download_datev_csv(filters)
+
+		get_datev_configuration_mock.assert_called_once_with("_Test GmbH")
+		self.assertEqual(get_transactions_mock.call_args.args[0]["account_number_length"], 6)
+		self.assertEqual(get_transactions_mock.call_args.args[0]["against_account"], "123456")
+		self.assertEqual(get_transactions_mock.call_args.args[0]["opening_account"], "654321")
+		self.assertEqual(get_transactions_mock.call_args.args[0]["skr"], "04")
 
 
 class TestDatevSalesInvoiceGrouping(TestCase):

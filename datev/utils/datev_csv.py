@@ -10,6 +10,9 @@ from frappe import _
 from .datev_constants import DataCategory
 
 
+DATEV_CONFIGURATION_DOCTYPE = "DATEV Configuration"
+
+
 def get_datev_csv(data, filters, csv_class):
 	"""
 	Fill in missing columns and return a CSV in DATEV Format.
@@ -74,7 +77,7 @@ def get_datev_csv(data, filters, csv_class):
 def get_header(filters, csv_class):
 	description = filters.get("voucher_type", csv_class.FORMAT_NAME)
 	company = filters.get("company")
-	datev_settings = frappe.get_doc("DATEV Settings", {"client": company})
+	datev_settings = frappe.get_doc(DATEV_CONFIGURATION_DOCTYPE, {"company": company})
 	default_currency = frappe.get_value("Company", company, "default_currency")
 	coa = frappe.get_value("Company", company, "chart_of_accounts")
 	coa_short_code = "04" if "SKR04" in coa else ("03" if "SKR03" in coa else "")
