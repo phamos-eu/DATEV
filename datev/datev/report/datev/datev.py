@@ -193,12 +193,16 @@ def validate(filters):
 
 	validate_fiscal_year(from_date, to_date, company)
 
-	if not frappe.db.exists(DATEV_CONFIGURATION_DOCTYPE, filters.get("company")):
-		msg = _("Please create DATEV Configuration for Company {}").format(filters.get("company"))
+	if not get_datev_configuration(company):
+		msg = get_missing_datev_configuration_message(company)
 		frappe.log_error(message=msg, title=_("DATEV Configuration missing"))
 		return False
 
 	return True
+
+
+def get_missing_datev_configuration_message(company):
+	return _("Please create DATEV Configuration for Company {}").format(company)
 
 
 def validate_fiscal_year(from_date, to_date, company):
@@ -211,8 +215,9 @@ def validate_fiscal_year(from_date, to_date, company):
 def get_datev_configuration(company):
 	return frappe.get_value(
 		DATEV_CONFIGURATION_DOCTYPE,
-		company,
+		{"company": company},
 		[
+			"name",
 			"account_number_length",
 			"temporary_against_account_number",
 			"opening_against_account_number",
@@ -1165,12 +1170,15 @@ def download_datev_csv(filters):
 	if isinstance(filters, str):
 		filters = json.loads(filters)
 
-	validate(filters)
-
 	company = filters.get("company")
+	if not validate(filters):
+		frappe.throw(get_missing_datev_configuration_message(company))
+
 	fiscal_year = get_fiscal_year(date=filters.get("from_date"), company=company)
 	coa = frappe.get_value("Company", company, "chart_of_accounts")
 	datev_configuration = get_datev_configuration(company)
+	if not datev_configuration:
+		frappe.throw(get_missing_datev_configuration_message(company))
 
 	filters.update(
 		{
