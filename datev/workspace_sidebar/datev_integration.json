@@ -24,8 +24,32 @@
    "icon": "settings",
    "indent": 0,
    "keep_closed": 0,
-   "label": "CSV-Export Settings",
+   "label": "DATEV Settings",
    "link_to": "DATEV Settings",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "folder-normal",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Company Configurations",
+   "link_to": "DATEV Configuration",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "sitemap",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "DATEV Mapping",
+   "link_to": "DATEV Mapping",
    "link_type": "DocType",
    "show_arrow": 0,
    "type": "Link"
@@ -43,7 +67,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-02-09 15:04:37.178481",
+ "modified": "2026-06-10 14:30:00.000000",
  "modified_by": "Administrator",
  "module": "DATEV",
  "name": "DATEV Integration",
