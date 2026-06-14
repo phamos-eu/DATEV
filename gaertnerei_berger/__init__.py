@@ -4,9 +4,14 @@ from importlib import import_module
 from datev import __version__
 
 
-def _alias_package(alias: str, target: str) -> None:
+def _alias_module(module_name: str, target: str):
 	module = import_module(target)
-	sys.modules[f"{__name__}.{alias}"] = module
+	sys.modules[module_name] = module
+	return module
+
+
+def _alias_package(alias: str, target: str) -> None:
+	module = _alias_module(f"{__name__}.{alias}", target)
 	globals()[alias] = module
 
 
