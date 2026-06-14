@@ -1,0 +1,52 @@
+{
+ "actions": [],
+ "creation": "2022-02-17 23:29:46.086115",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "settings_help"
+ ],
+ "fields": [
+  {
+   "fieldname": "settings_help",
+   "fieldtype": "HTML",
+   "options": "<div class='text-muted' style='line-height: 1.6;'>Use this page as the DATEV entry point for navigation. Company-specific accounting export values now live in <b>DATEV Configuration</b>, while field-to-column rules stay in <b>DATEV Mapping</b>.</div>"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-06-10 14:30:00.000000",
+ "modified_by": "Administrator",
+ "module": "GB DATEV",
+ "name": "DATEV Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Accounts Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Accounts User",
+   "share": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

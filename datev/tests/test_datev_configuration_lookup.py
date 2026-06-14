@@ -1,13 +1,13 @@
 import unittest
 from unittest.mock import patch
 
-import frappe
+from datev.tests._module_stubs import import_with_framework_stubs
 
-from datev.datev.report.datev.datev import (
-	download_datev_csv,
-	get_datev_configuration,
-	validate,
-)
+frappe = import_with_framework_stubs("frappe")
+datev_module = import_with_framework_stubs("datev.gb_datev.report.datev.datev")
+download_datev_csv = datev_module.download_datev_csv
+get_datev_configuration = datev_module.get_datev_configuration
+validate = datev_module.validate
 
 
 class TestDatevConfigurationLookup(unittest.TestCase):
@@ -22,7 +22,7 @@ class TestDatevConfigurationLookup(unittest.TestCase):
 		)
 
 		with patch(
-			"datev.datev.report.datev.datev.frappe.get_value",
+			"datev.gb_datev.report.datev.datev.frappe.get_value",
 			return_value=configuration,
 		) as get_value_mock:
 			result = get_datev_configuration("_Test GmbH")
@@ -49,10 +49,10 @@ class TestDatevConfigurationLookup(unittest.TestCase):
 
 		with (
 			patch(
-				"datev.datev.report.datev.datev.validate_fiscal_year"
+				"datev.gb_datev.report.datev.datev.validate_fiscal_year"
 			) as validate_fiscal_year_mock,
 			patch(
-				"datev.datev.report.datev.datev.get_datev_configuration",
+				"datev.gb_datev.report.datev.datev.get_datev_configuration",
 				return_value=frappe._dict({"name": "DATEV Settings"}),
 			),
 		):
@@ -76,41 +76,41 @@ class TestDatevConfigurationLookup(unittest.TestCase):
 		)
 
 		with (
-			patch("datev.datev.report.datev.datev.frappe.only_for"),
-			patch("datev.datev.report.datev.datev.validate", return_value=True),
+			patch("datev.gb_datev.report.datev.datev.frappe.only_for"),
+			patch("datev.gb_datev.report.datev.datev.validate", return_value=True),
 			patch(
-				"datev.datev.report.datev.datev.get_fiscal_year",
+				"datev.gb_datev.report.datev.datev.get_fiscal_year",
 				return_value=("FY-2026", "2026-01-01", "2026-12-31"),
 			),
 			patch(
-				"datev.datev.report.datev.datev.frappe.get_value",
+				"datev.gb_datev.report.datev.datev.frappe.get_value",
 				return_value="SKR04 mit Kontonummern",
 			),
 			patch(
-				"datev.datev.report.datev.datev.get_datev_configuration",
+				"datev.gb_datev.report.datev.datev.get_datev_configuration",
 				return_value=datev_configuration,
 			) as get_datev_configuration_mock,
 			patch(
-				"datev.datev.report.datev.datev.get_transactions",
+				"datev.gb_datev.report.datev.datev.get_transactions",
 				return_value=[],
 			) as get_transactions_mock,
 			patch(
-				"datev.datev.report.datev.datev.group_sales_invoice_buchungsstapel",
+				"datev.gb_datev.report.datev.datev.group_sales_invoice_buchungsstapel",
 				side_effect=lambda transactions, _: transactions,
 			),
 			patch(
-				"datev.datev.report.datev.datev.group_payment_entry_buchungsstapel",
+				"datev.gb_datev.report.datev.datev.group_payment_entry_buchungsstapel",
 				side_effect=lambda transactions, _: transactions,
 			),
 			patch(
-				"datev.datev.report.datev.datev.apply_buchungsstapel_mapping",
+				"datev.gb_datev.report.datev.datev.apply_buchungsstapel_mapping",
 				side_effect=lambda transactions, _: transactions,
 			),
-			patch("datev.datev.report.datev.datev.get_account_names", return_value=[]),
-			patch("datev.datev.report.datev.datev.get_customers", return_value=[]),
-			patch("datev.datev.report.datev.datev.get_suppliers", return_value=[]),
-			patch("datev.datev.report.datev.datev.get_datev_csv", return_value="csv"),
-			patch("datev.datev.report.datev.datev.zip_and_download"),
+			patch("datev.gb_datev.report.datev.datev.get_account_names", return_value=[]),
+			patch("datev.gb_datev.report.datev.datev.get_customers", return_value=[]),
+			patch("datev.gb_datev.report.datev.datev.get_suppliers", return_value=[]),
+			patch("datev.gb_datev.report.datev.datev.get_datev_csv", return_value="csv"),
+			patch("datev.gb_datev.report.datev.datev.zip_and_download"),
 		):
 			download_datev_csv.__wrapped__(filters)
 
@@ -128,17 +128,17 @@ class TestDatevConfigurationLookup(unittest.TestCase):
 		}
 
 		with (
-			patch("datev.datev.report.datev.datev.frappe.only_for"),
-			patch("datev.datev.report.datev.datev.validate", return_value=False),
+			patch("datev.gb_datev.report.datev.datev.frappe.only_for"),
+			patch("datev.gb_datev.report.datev.datev.validate", return_value=False),
 			patch(
-				"datev.datev.report.datev.datev.get_missing_datev_configuration_message",
+				"datev.gb_datev.report.datev.datev.get_missing_datev_configuration_message",
 				return_value="Please create DATEV Configuration for Company _Test GmbH",
 			),
 			patch(
-				"datev.datev.report.datev.datev.frappe.throw",
+				"datev.gb_datev.report.datev.datev.frappe.throw",
 				side_effect=RuntimeError("DATEV Configuration missing"),
 			) as throw_mock,
-			patch("datev.datev.report.datev.datev.get_fiscal_year") as get_fiscal_year_mock,
+			patch("datev.gb_datev.report.datev.datev.get_fiscal_year") as get_fiscal_year_mock,
 		):
 			with self.assertRaisesRegex(RuntimeError, "DATEV Configuration missing"):
 				download_datev_csv.__wrapped__(filters)

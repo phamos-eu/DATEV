@@ -3,7 +3,7 @@ name = "datev"
 authors = [
     { name = "phamos", email = "info@phamos.eu"}
 ]
-description = "DATEV"
+description = "DATEV integration for ERPNext"
 requires-python = ">=3.10"
 readme = "README.md"
 dynamic = ["version"]
