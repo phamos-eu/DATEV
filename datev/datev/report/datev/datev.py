@@ -319,6 +319,7 @@ def get_grouped_invoice_rows(voucher_type, voucher_no, voucher_rows, filters):
 				konto=konto,
 				gegenkonto=gegenkonto,
 				bu_schluessel=bu_schluessel,
+				tax_grouping_key=tax_grouping_key,
 				amount=amount,
 			)
 			continue
@@ -441,13 +442,17 @@ def normalize_invoice_grouping_value(value):
 	return str(value)
 
 
-def make_grouped_invoice_row(voucher_type, base_row, konto, gegenkonto, bu_schluessel, amount):
+def make_grouped_invoice_row(
+	voucher_type, base_row, konto, gegenkonto, bu_schluessel, tax_grouping_key, amount
+):
 	row = dict(base_row)
 	row["Umsatz (ohne Soll/Haben-Kz)"] = abs(amount)
 	row["Soll/Haben-Kennzeichen"] = get_grouped_invoice_amount_indicator(voucher_type, amount)
 	row["Konto"] = konto
 	row["Gegenkonto (ohne BU-Schlüssel)"] = gegenkonto
 	row["BU-Schlüssel"] = bu_schluessel
+	row["_grouped_invoice_item_konto"] = konto
+	row["_grouped_invoice_tax_grouping_key"] = tax_grouping_key
 	return row
 
 
@@ -1012,14 +1017,19 @@ def select_matching_child_row(
 
 	konto = transaction_row.get("Konto")
 	gegenkonto = transaction_row.get("Gegenkonto (ohne BU-Schlüssel)")
+	grouped_invoice_item_konto = transaction_row.get("_grouped_invoice_item_konto")
+	grouped_invoice_tax_grouping_key = transaction_row.get("_grouped_invoice_tax_grouping_key")
 
 	target_values = {
 		konto,
 		gegenkonto,
+		grouped_invoice_item_konto,
 		account_number_to_name.get(konto),
 		account_number_to_name.get(gegenkonto),
+		account_number_to_name.get(grouped_invoice_item_konto),
 		account_name_to_number.get(konto),
 		account_name_to_number.get(gegenkonto),
+		account_name_to_number.get(grouped_invoice_item_konto),
 	}
 	target_values.discard(None)
 	target_values.discard("")
@@ -1031,6 +1041,11 @@ def select_matching_child_row(
 		row_child_value = row.get(child_field)
 		if row_child_value in target_values:
 			score += 3
+
+		if grouped_invoice_tax_grouping_key:
+			row_tax_grouping_key = get_invoice_item_tax_grouping_key(row)
+			if row_tax_grouping_key == grouped_invoice_tax_grouping_key:
+				score += 4
 
 		for account_field in account_fields:
 			if row.get(account_field) in target_values:

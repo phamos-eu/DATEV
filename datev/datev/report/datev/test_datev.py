@@ -1262,6 +1262,122 @@ class TestDatevSalesInvoiceGrouping(TestCase):
 		)
 		self.assertEqual(resolve_map.call_count, 2)
 
+	def test_preserves_grouped_sales_invoice_child_match_after_parent_konto_override(self):
+		transactions = [
+			{
+				"Umsatz (ohne Soll/Haben-Kz)": 25.0,
+				"Soll/Haben-Kennzeichen": "H",
+				"Konto": "8400",
+				"Gegenkonto (ohne BU-Schlüssel)": "10001",
+				"BU-Schlüssel": "19",
+				"Belegfeld 1": "ACC-SINV-2026-00015",
+				"Beleginfo - Art 1": "Sales Invoice",
+				"_grouped_invoice_item_konto": "8400",
+				"_grouped_invoice_tax_grouping_key": "item_tax_template:DE Standard 19",
+			},
+			{
+				"Umsatz (ohne Soll/Haben-Kz)": 7.0,
+				"Soll/Haben-Kennzeichen": "H",
+				"Konto": "8400",
+				"Gegenkonto (ohne BU-Schlüssel)": "10001",
+				"BU-Schlüssel": "7",
+				"Belegfeld 1": "ACC-SINV-2026-00015",
+				"Beleginfo - Art 1": "Sales Invoice",
+				"_grouped_invoice_item_konto": "8400",
+				"_grouped_invoice_tax_grouping_key": "item_tax_template:DE Reduced 7",
+			},
+			{
+				"Umsatz (ohne Soll/Haben-Kz)": 9.0,
+				"Soll/Haben-Kennzeichen": "H",
+				"Konto": "8300",
+				"Gegenkonto (ohne BU-Schlüssel)": "10001",
+				"BU-Schlüssel": "19",
+				"Belegfeld 1": "ACC-SINV-2026-00015",
+				"Beleginfo - Art 1": "Sales Invoice",
+				"_grouped_invoice_item_konto": "8300",
+				"_grouped_invoice_tax_grouping_key": "item_tax_template:DE Standard 19",
+			},
+		]
+		sales_invoice = frappe._dict(
+			{
+				"name": "sales-invoice",
+				"custom_datev_account_no": "3250",
+				"items": [
+					frappe._dict(
+						{
+							"custom_datev_account_no": "8400",
+							"item_tax_template": "DE Standard 19",
+						}
+					),
+					frappe._dict(
+						{
+							"custom_datev_account_no": "8400",
+							"item_tax_template": "DE Reduced 7",
+						}
+					),
+					frappe._dict(
+						{
+							"custom_datev_account_no": "8300",
+							"item_tax_template": "DE Standard 19",
+						}
+					),
+				],
+			}
+		)
+		sales_invoice.meta = Mock()
+		sales_invoice.meta.get_field.return_value = frappe._dict(options="Sales Invoice Item")
+		child_meta = frappe._dict(
+			{
+				"fields": [
+					frappe._dict(
+						{
+							"fieldname": "income_account",
+							"fieldtype": "Link",
+							"options": "Account",
+						}
+					)
+				]
+			}
+		)
+
+		with (
+			patch(
+				"datev.datev.report.datev.datev.get_buchungsstapel_mappings",
+				return_value={
+					"Sales Invoice": [
+						frappe._dict(
+							{
+								"map_to_field": "custom_datev_account_no",
+								"map_to_column": "Konto",
+							}
+						),
+						frappe._dict(
+							{
+								"map_to_field": "items.custom_datev_account_no",
+								"map_to_column": "Gegenkonto (ohne BU-Schlüssel)",
+							}
+						),
+					]
+				},
+			),
+			patch(
+				"datev.datev.report.datev.datev.get_account_maps",
+				return_value=({}, {}),
+			),
+			patch(
+				"datev.datev.report.datev.datev.load_voucher_doc",
+				return_value=sales_invoice,
+			),
+			patch("datev.datev.report.datev.datev.frappe.get_meta", return_value=child_meta),
+		):
+			mapped = apply_buchungsstapel_mapping(transactions, {"company": "_Test GmbH"})
+
+		self.assertEqual([row["Konto"] for row in mapped], ["3250", "3250", "3250"])
+		self.assertEqual(
+			[row["Gegenkonto (ohne BU-Schlüssel)"] for row in mapped],
+			["8400", "8400", "8300"],
+		)
+
 
 class TestDatevPaymentEntryGrouping(TestCase):
 	def test_groups_receive_payment_entry_into_single_line_with_invoice_bu_schluessel(self):
