@@ -996,7 +996,7 @@ class TestDatevSalesInvoiceGrouping(TestCase):
 		self.assertEqual([row["BU-Schlüssel"] for row in payment_rows], ["mapped-payment"])
 		self.assertEqual(resolve_map.call_count, 1)
 
-	def test_preserves_grouped_sales_invoice_konto_for_parent_datev_account_mapping(self):
+	def test_applies_grouped_sales_invoice_parent_konto_mapping_with_item_gegenkonto_mapping(self):
 		transactions = [
 			{
 				"Konto": "8400",
@@ -1031,15 +1031,16 @@ class TestDatevSalesInvoiceGrouping(TestCase):
 								"map_to_field": "custom_datev_account_no",
 								"map_to_column": "Konto",
 							}
-						)
-					],
-					"Payment Entry": [
+						),
 						frappe._dict(
 							{
-								"map_to_field": "reference_no",
-								"map_to_column": "Konto",
+								"map_to_field": "items.custom_datev_account_no",
+								"map_to_column": "Gegenkonto (ohne BU-Schlüssel)",
 							}
-						)
+						),
+					],
+					"Payment Entry": [
+						frappe._dict({"map_to_field": "reference_no", "map_to_column": "Konto"})
 					],
 				},
 			),
@@ -1050,15 +1051,23 @@ class TestDatevSalesInvoiceGrouping(TestCase):
 			patch(
 				"datev.datev.report.datev.datev.load_voucher_doc",
 				side_effect=[
-					frappe._dict({"name": "sales-invoice", "custom_datev_account_no": "9999"}),
+					frappe._dict({"name": "sales-invoice", "custom_datev_account_no": "3250"}),
 					frappe._dict({"name": "payment-entry", "reference_no": "mapped-payment"}),
 				],
+			),
+			patch(
+				"datev.datev.report.datev.datev.resolve_map_to_value",
+				side_effect=["3250", "8400", "3250", "8300", "mapped-payment"],
 			),
 		):
 			mapped = apply_buchungsstapel_mapping(transactions, {"company": "_Test GmbH"})
 
 		sales_rows = [row for row in mapped if row["Beleginfo - Art 1"] == "Sales Invoice"]
-		self.assertEqual([row["Konto"] for row in sales_rows], ["8400", "8300"])
+		self.assertEqual([row["Konto"] for row in sales_rows], ["3250", "3250"])
+		self.assertEqual(
+			[row["Gegenkonto (ohne BU-Schlüssel)"] for row in sales_rows],
+			["8400", "8300"],
+		)
 
 		payment_rows = [row for row in mapped if row["Beleginfo - Art 1"] == "Payment Entry"]
 		self.assertEqual([row["Konto"] for row in payment_rows], ["mapped-payment"])

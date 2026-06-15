@@ -851,7 +851,7 @@ def should_preserve_grouped_invoice_konto(row, mapping):
 		return False
 
 	map_to_field = mapping.get("map_to_field") or ""
-	if map_to_field not in {"custom_datev_account_no", "items.custom_datev_account_no"}:
+	if map_to_field != "items.custom_datev_account_no":
 		return False
 
 	return row.get("Beleginfo - Art 1") in {"Sales Invoice", "Purchase Invoice"} and bool(
