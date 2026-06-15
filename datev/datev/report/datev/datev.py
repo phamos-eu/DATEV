@@ -827,6 +827,9 @@ def should_preserve_existing_mapped_value(row, mapping):
 	if should_preserve_existing_item_bu_schluessel(row, mapping):
 		return True
 
+	if should_preserve_grouped_invoice_konto(row, mapping):
+		return True
+
 	return False
 
 
@@ -838,6 +841,18 @@ def should_preserve_existing_item_bu_schluessel(row, mapping):
 		return False
 
 	return bool(row.get("BU-Schlüssel"))
+
+
+def should_preserve_grouped_invoice_konto(row, mapping):
+	if mapping.get("map_to_column") != "Konto":
+		return False
+
+	if mapping.get("map_to_field") != "custom_datev_account_no":
+		return False
+
+	return row.get("Beleginfo - Art 1") in {"Sales Invoice", "Purchase Invoice"} and bool(
+		row.get("Konto")
+	)
 
 
 def get_buchungsstapel_mappings(voucher_types, company, datev_configuration=None):
