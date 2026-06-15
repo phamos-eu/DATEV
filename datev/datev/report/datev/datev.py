@@ -163,6 +163,7 @@ def execute(filters=None):
 		datev_configuration = get_datev_configuration(filters.get("company"))
 		filters.update(
 			{
+				"datev_configuration": datev_configuration.name,
 				"against_account": datev_configuration.temporary_against_account_number,
 				"opening_account": datev_configuration.opening_against_account_number
 				or datev_configuration.temporary_against_account_number,
@@ -762,7 +763,11 @@ def apply_buchungsstapel_mapping(transactions, filters):
 	if not voucher_types:
 		return transactions
 
-	mappings = get_buchungsstapel_mappings(voucher_types)
+	mappings = get_buchungsstapel_mappings(
+		voucher_types,
+		filters.get("company"),
+		filters.get("datev_configuration"),
+	)
 	if not mappings:
 		return transactions
 
@@ -835,10 +840,22 @@ def should_preserve_existing_item_bu_schluessel(row, mapping):
 	return bool(row.get("BU-Schlüssel"))
 
 
-def get_buchungsstapel_mappings(voucher_types):
+def get_buchungsstapel_mappings(voucher_types, company, datev_configuration=None):
+	if not datev_configuration and company:
+		datev_configuration = get_datev_configuration(company)
+
+	if hasattr(datev_configuration, "name"):
+		datev_configuration = datev_configuration.name
+
+	if not datev_configuration:
+		return {}
+
 	parent_rows = frappe.get_all(
 		"DATEV Mapping",
-		filters={"voucher_type": ["in", list(voucher_types)]},
+		filters={
+			"datev_configuration": datev_configuration,
+			"voucher_type": ["in", list(voucher_types)],
+		},
 		fields=["name", "voucher_type"],
 		limit_page_length=0,
 	)
@@ -1184,6 +1201,7 @@ def download_datev_csv(filters):
 		{
 			"fiscal_year_start": fiscal_year[1],
 			"skr": "04" if "SKR04" in coa else ("03" if "SKR03" in coa else ""),
+			"datev_configuration": datev_configuration.name,
 			"account_number_length": datev_configuration.account_number_length,
 			"against_account": datev_configuration.temporary_against_account_number,
 			"opening_account": datev_configuration.opening_against_account_number

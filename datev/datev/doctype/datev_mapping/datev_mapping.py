@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 
 VOUCHER_TYPE_OPTIONS = [
@@ -40,7 +41,24 @@ NON_VALUE_FIELD_TYPES = {
 
 
 class DATEVMapping(Document):
-	pass
+	def validate(self):
+		if not self.datev_configuration or not self.voucher_type:
+			return
+
+		existing_name = frappe.db.exists(
+			"DATEV Mapping",
+			{
+				"datev_configuration": self.datev_configuration,
+				"voucher_type": self.voucher_type,
+				"name": ["!=", self.name or ""],
+			},
+		)
+		if existing_name:
+			frappe.throw(
+				_("A DATEV Mapping already exists for voucher type {0} in configuration {1}.").format(
+					self.voucher_type, self.datev_configuration
+				)
+			)
 
 
 @frappe.whitelist()

@@ -5,6 +5,7 @@ import frappe
 
 from datev.datev.report.datev.datev import (
 	download_datev_csv,
+	get_buchungsstapel_mappings,
 	get_datev_configuration,
 	validate,
 )
@@ -14,7 +15,7 @@ class TestDatevConfigurationLookup(unittest.TestCase):
 	def test_get_datev_configuration_looks_up_by_company_field(self):
 		configuration = frappe._dict(
 			{
-				"name": "DATEV Settings",
+				"name": "_Test GmbH",
 				"account_number_length": 4,
 				"temporary_against_account_number": "9999",
 				"opening_against_account_number": "9000",
@@ -38,7 +39,7 @@ class TestDatevConfigurationLookup(unittest.TestCase):
 			],
 			as_dict=1,
 		)
-		self.assertEqual(result.name, "DATEV Settings")
+		self.assertEqual(result.name, "_Test GmbH")
 
 	def test_validate_accepts_company_matched_configuration(self):
 		filters = {
@@ -53,7 +54,7 @@ class TestDatevConfigurationLookup(unittest.TestCase):
 			) as validate_fiscal_year_mock,
 			patch(
 				"datev.datev.report.datev.datev.get_datev_configuration",
-				return_value=frappe._dict({"name": "DATEV Settings"}),
+				return_value=frappe._dict({"name": "_Test GmbH"}),
 			),
 		):
 			self.assertTrue(validate(filters))
@@ -68,7 +69,7 @@ class TestDatevConfigurationLookup(unittest.TestCase):
 		}
 		datev_configuration = frappe._dict(
 			{
-				"name": "DATEV Settings",
+				"name": "_Test GmbH",
 				"account_number_length": 6,
 				"temporary_against_account_number": "123456",
 				"opening_against_account_number": "654321",
@@ -145,3 +146,36 @@ class TestDatevConfigurationLookup(unittest.TestCase):
 
 		throw_mock.assert_called_once_with("Please create DATEV Configuration for Company _Test GmbH")
 		get_fiscal_year_mock.assert_not_called()
+
+	def test_get_buchungsstapel_mappings_filters_by_configuration(self):
+		parent_rows = [frappe._dict({"name": "Sales Invoice - _Test GmbH", "voucher_type": "Sales Invoice"})]
+		child_rows = [
+			frappe._dict(
+				{
+					"parent": "Sales Invoice - _Test GmbH",
+					"map_to_field": "due_date",
+					"map_to_column": "Fälligkeit",
+				}
+			)
+		]
+
+		with (
+			patch(
+				"datev.datev.report.datev.datev.get_datev_configuration",
+				return_value=frappe._dict({"name": "_Test GmbH"}),
+			),
+			patch(
+				"datev.datev.report.datev.datev.frappe.get_all",
+				side_effect=[parent_rows, child_rows],
+			) as get_all_mock,
+		):
+			result = get_buchungsstapel_mappings({"Sales Invoice"}, "_Test GmbH")
+
+		self.assertEqual(result["Sales Invoice"][0].map_to_field, "due_date")
+		self.assertEqual(
+			get_all_mock.call_args_list[0].kwargs["filters"],
+			{
+				"datev_configuration": "_Test GmbH",
+				"voucher_type": ["in", ["Sales Invoice"]],
+			},
+		)

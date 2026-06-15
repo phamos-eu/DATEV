@@ -8,5 +8,14 @@ frappe.ui.form.on("DATEV Configuration", {
 			() => frappe.set_route("query-report", "DATEV"),
 			"fa fa-table"
 		);
+
+		frm.add_custom_button(
+			__("DATEV Mapping"),
+			() => {
+				frappe.route_options = { datev_configuration: frm.doc.name };
+				frappe.set_route("List", "DATEV Mapping");
+			},
+			__("Open")
+		);
 	},
 });

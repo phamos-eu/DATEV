@@ -1,22 +1,30 @@
 {
  "actions": [],
- "autoname": "field:voucher_type",
+ "autoname": "format:{voucher_type} - {datev_configuration}",
  "creation": "2026-04-28 16:20:00.000000",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "datev_configuration",
   "voucher_type",
   "mapping_fields"
  ],
  "fields": [
+  {
+   "fieldname": "datev_configuration",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "DATEV Configuration",
+   "options": "DATEV Configuration",
+   "reqd": 1
+  },
   {
    "fieldname": "voucher_type",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Voucher Type",
    "options": "\nSales Invoice\nPurchase Invoice\nPayment Entry\nExpense Claim\nPayroll Entry\nBank Reconciliation\nAsset\nStock Entry\nJournal Entry",
-   "reqd": 1,
-   "unique": 1
+   "reqd": 1
   },
   {
    "fieldname": "mapping_fields",
