@@ -874,7 +874,17 @@ def should_preserve_grouped_invoice_core_column(row, mapping):
 	}:
 		return False
 
+	if should_allow_grouped_invoice_child_gegenkonto_override(mapping):
+		return False
+
 	return bool(row.get(mapping.get("map_to_column")) not in (None, ""))
+
+
+def should_allow_grouped_invoice_child_gegenkonto_override(mapping):
+	return (
+		mapping.get("map_to_column") == "Gegenkonto (ohne BU-Schlüssel)"
+		and mapping.get("map_to_field") == "items.custom_datev_account_no"
+	)
 
 
 def get_buchungsstapel_mappings(voucher_types, company, datev_configuration=None):

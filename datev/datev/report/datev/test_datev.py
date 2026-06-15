@@ -1187,7 +1187,7 @@ class TestDatevSalesInvoiceGrouping(TestCase):
 		)
 		self.assertEqual(resolve_map.call_count, 0)
 
-	def test_preserves_grouped_sales_invoice_gegenkonto_for_item_mapping(self):
+	def test_applies_grouped_sales_invoice_item_gegenkonto_mapping_with_parent_konto_mapping(self):
 		transactions = [
 			{
 				"Umsatz (ohne Soll/Haben-Kz)": 25.0,
@@ -1216,6 +1216,12 @@ class TestDatevSalesInvoiceGrouping(TestCase):
 					"Sales Invoice": [
 						frappe._dict(
 							{
+								"map_to_field": "custom_datev_account_no",
+								"map_to_column": "Konto",
+							}
+						),
+						frappe._dict(
+							{
 								"map_to_field": "items.custom_datev_account_no",
 								"map_to_column": "Gegenkonto (ohne BU-Schlüssel)",
 							}
@@ -1229,20 +1235,23 @@ class TestDatevSalesInvoiceGrouping(TestCase):
 			),
 			patch(
 				"datev.datev.report.datev.datev.load_voucher_doc",
-				return_value=frappe._dict({"name": "sales-invoice"}),
+				return_value=frappe._dict(
+					{"name": "sales-invoice", "custom_datev_account_no": "9999"}
+				),
 			),
 			patch(
 				"datev.datev.report.datev.datev.resolve_map_to_value",
-				return_value="8400",
+				side_effect=["8400", "8300"],
 			) as resolve_map,
 		):
 			mapped = apply_buchungsstapel_mapping(transactions, {"company": "_Test GmbH"})
 
+		self.assertEqual([row["Konto"] for row in mapped], ["8400", "8300"])
 		self.assertEqual(
 			[row["Gegenkonto (ohne BU-Schlüssel)"] for row in mapped],
-			["10001", "10001"],
+			["8400", "8300"],
 		)
-		self.assertEqual(resolve_map.call_count, 0)
+		self.assertEqual(resolve_map.call_count, 2)
 
 
 class TestDatevPaymentEntryGrouping(TestCase):
