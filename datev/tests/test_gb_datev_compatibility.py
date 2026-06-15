@@ -1,6 +1,7 @@
 import importlib
 import importlib.util
 import unittest
+import json
 from pathlib import Path
 
 
@@ -91,3 +92,8 @@ class TestDatevGbDatevCompatibility(unittest.TestCase):
 		patches_file = Path("gaertnerei_berger/patches.txt").read_text()
 
 		self.assertEqual(patches_file.strip(), "[pre_model_sync]\n\n[post_model_sync]")
+
+	def test_legacy_report_definition_uses_canonical_module_name(self):
+		report_definition = json.loads(Path("datev/gb_datev/report/datev/datev.json").read_text())
+
+		self.assertEqual(report_definition["module"], "DATEV")
