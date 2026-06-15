@@ -830,6 +830,9 @@ def should_preserve_existing_mapped_value(row, mapping):
 	if should_preserve_grouped_invoice_konto(row, mapping):
 		return True
 
+	if should_preserve_grouped_invoice_core_column(row, mapping):
+		return True
+
 	return False
 
 
@@ -847,12 +850,31 @@ def should_preserve_grouped_invoice_konto(row, mapping):
 	if mapping.get("map_to_column") != "Konto":
 		return False
 
-	if mapping.get("map_to_field") != "custom_datev_account_no":
+	map_to_field = mapping.get("map_to_field") or ""
+	if map_to_field not in {"custom_datev_account_no", "items.custom_datev_account_no"}:
 		return False
 
 	return row.get("Beleginfo - Art 1") in {"Sales Invoice", "Purchase Invoice"} and bool(
 		row.get("Konto")
 	)
+
+
+def should_preserve_grouped_invoice_core_column(row, mapping):
+	if row.get("Beleginfo - Art 1") not in {"Sales Invoice", "Purchase Invoice"}:
+		return False
+
+	if not mapping.get("map_to_field") or "." not in mapping.get("map_to_field"):
+		return False
+
+	if mapping.get("map_to_column") not in {
+		"Umsatz (ohne Soll/Haben-Kz)",
+		"Soll/Haben-Kennzeichen",
+		"Konto",
+		"Gegenkonto (ohne BU-Schlüssel)",
+	}:
+		return False
+
+	return bool(row.get(mapping.get("map_to_column")) not in (None, ""))
 
 
 def get_buchungsstapel_mappings(voucher_types, company, datev_configuration=None):
