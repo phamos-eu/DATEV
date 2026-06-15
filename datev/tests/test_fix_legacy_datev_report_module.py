@@ -3,6 +3,7 @@ import sys
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
+from pathlib import Path
 
 
 class TestFixLegacyDatevReportModule(unittest.TestCase):
@@ -47,3 +48,10 @@ class TestFixLegacyDatevReportModule(unittest.TestCase):
 
 		with patch.object(migration, "frappe", fake_frappe):
 			migration.execute()
+
+	def test_patches_txt_registers_canonical_fix_patch(self):
+		patches_txt = Path(__file__).resolve().parents[1] / "patches.txt"
+		patch_entries = patches_txt.read_text().splitlines()
+
+		self.assertIn("datev.patches.post_model_sync.fix_legacy_datev_report_module", patch_entries)
+		self.assertNotIn("datev.patches.post_model_sync.fix_datev_report_module", patch_entries)
