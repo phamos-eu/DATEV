@@ -859,7 +859,7 @@ class TestDatevSalesInvoiceGrouping(TestCase):
 
 		self.assertEqual(grouped, transactions)
 
-	def test_preserves_grouped_sales_invoice_bu_schluessel_from_mapping_override(self):
+	def test_applies_grouped_sales_invoice_bu_schluessel_from_mapping_override(self):
 		transactions = [
 			{
 				"Konto": "8400",
@@ -919,19 +919,19 @@ class TestDatevSalesInvoiceGrouping(TestCase):
 			),
 			patch(
 				"datev.datev.report.datev.datev.resolve_map_to_value",
-				return_value="mapped-payment",
+				side_effect=["mapped-sales", "mapped-sales", "mapped-payment"],
 			) as resolve_map,
 		):
 			mapped = apply_buchungsstapel_mapping(transactions, {"company": "_Test GmbH"})
 
 		sales_rows = [row for row in mapped if row["Beleginfo - Art 1"] == "Sales Invoice"]
-		self.assertEqual([row["BU-Schlüssel"] for row in sales_rows], ["19", "7"])
+		self.assertEqual([row["BU-Schlüssel"] for row in sales_rows], ["mapped-sales", "mapped-sales"])
 
 		payment_rows = [row for row in mapped if row["Beleginfo - Art 1"] == "Payment Entry"]
 		self.assertEqual([row["BU-Schlüssel"] for row in payment_rows], ["mapped-payment"])
-		self.assertEqual(resolve_map.call_count, 1)
+		self.assertEqual(resolve_map.call_count, 3)
 
-	def test_preserves_purchase_invoice_bu_schluessel_from_mapping_override(self):
+	def test_applies_purchase_invoice_bu_schluessel_from_mapping_override(self):
 		transactions = [
 			{
 				"Konto": "3400",
@@ -984,17 +984,17 @@ class TestDatevSalesInvoiceGrouping(TestCase):
 			),
 			patch(
 				"datev.datev.report.datev.datev.resolve_map_to_value",
-				return_value="mapped-payment",
+				side_effect=["mapped-purchase", "mapped-payment"],
 			) as resolve_map,
 		):
 			mapped = apply_buchungsstapel_mapping(transactions, {"company": "_Test GmbH"})
 
 		purchase_rows = [row for row in mapped if row["Beleginfo - Art 1"] == "Purchase Invoice"]
-		self.assertEqual([row["BU-Schlüssel"] for row in purchase_rows], ["9"])
+		self.assertEqual([row["BU-Schlüssel"] for row in purchase_rows], ["mapped-purchase"])
 
 		payment_rows = [row for row in mapped if row["Beleginfo - Art 1"] == "Payment Entry"]
 		self.assertEqual([row["BU-Schlüssel"] for row in payment_rows], ["mapped-payment"])
-		self.assertEqual(resolve_map.call_count, 1)
+		self.assertEqual(resolve_map.call_count, 2)
 
 	def test_applies_grouped_sales_invoice_konto_from_parent_mapping_override(self):
 		transactions = [
